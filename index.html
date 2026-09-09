@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Takenlijst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Baloo+Bhaijaan+2:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#3a4553;
+  --ink-soft:#5b6878;
+  --blue:#687688;
+  --blue-deep:#4c5867;
+  --cream:#f5f0e6;
+  --paper:#fffdf8;
+  --yellow:#f0c02e;
+  --line:#ded5c4;
+  --muted:#8d8574;
+  --danger:#b23a2f;
+  --radius:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:720px;margin:0 auto;padding:48px 24px 96px}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:32px}
+.brand{display:flex;align-items:center;gap:14px}
+.sun{
+  width:36px;height:36px;flex:0 0 auto;
+  color:var(--blue);
+  transition:color .5s ease, transform .5s ease;
+}
+.sun.happy{color:var(--yellow);transform:rotate(15deg)}
+@media (prefers-reduced-motion:reduce){.sun{transition:color .5s ease}.sun.happy{transform:none}}
+h1{
+  font-family:"Baloo Bhaijaan 2","Archivo",sans-serif;
+  font-size:44px;font-weight:600;line-height:1.05;
+  letter-spacing:-0.01em;margin:0;color:var(--blue);
+}
+.count{font-size:14px;color:var(--muted)}
+
+/* ---------- invoer ---------- */
+.compose{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+  margin-bottom:28px;
+}
+.compose input{
+  font-family:inherit;font-size:16px;color:var(--ink);
+  background:transparent;border:none;outline:none;width:100%;
+}
+.compose input::placeholder{color:#b3ab99}
+#title{font-size:18px;padding:4px 2px 12px}
+.meta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+.field{
+  display:flex;align-items:center;gap:6px;
+  border:1px solid var(--line);border-radius:6px;
+  padding:6px 10px;background:var(--cream);
+}
+.field label{font-size:13px;color:var(--muted);white-space:nowrap}
+.field input{font-size:14px;width:auto}
+#project{width:140px}
+#deadline{width:135px;color:var(--ink)}
+button{font-family:inherit;cursor:pointer}
+#add{
+  margin-left:auto;background:var(--blue);color:#fff;border:none;
+  border-radius:6px;padding:9px 20px;font-size:14px;font-weight:600;
+  transition:background .15s;
+}
+#add:hover{background:var(--blue-deep)}
+#add:focus-visible,.field input:focus-visible,#title:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* ---------- filters ---------- */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+.chip{
+  border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+  border-radius:999px;padding:5px 14px;font-size:13px;transition:.15s;
+}
+.chip:hover{border-color:var(--ink-soft)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+
+/* ---------- taken ---------- */
+ul{list-style:none;margin:0;padding:0}
+li.task{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 4px;border-bottom:1px solid var(--line);
+}
+li.task:first-child{border-top:1px solid var(--line)}
+.check{
+  flex:0 0 auto;margin-top:2px;width:19px;height:19px;
+  border:1.5px solid var(--ink-soft);border-radius:5px;
+  background:transparent;padding:0;display:grid;place-items:center;
+  transition:.15s;
+}
+.check:hover{border-color:var(--blue);background:rgba(37,84,184,.07)}
+.check svg{width:12px;height:12px;opacity:0}
+.body{flex:1 1 auto;min-width:0}
+.title-text{font-size:16px;word-break:break-word;cursor:text}
+.sub{display:flex;gap:12px;flex-wrap:wrap;margin-top:3px;font-size:13px;color:var(--muted)}
+.tag{color:var(--blue);font-weight:500}
+.due.today{color:var(--ink);font-weight:600}
+.due.late{color:var(--danger);font-weight:600}
+.del{
+  flex:0 0 auto;border:none;background:transparent;color:#c4bbaa;
+  font-size:18px;line-height:1;padding:2px 6px;border-radius:4px;
+  opacity:0;transition:.15s;
+}
+li.task:hover .del,.del:focus-visible{opacity:1}
+.del:hover{color:var(--danger);background:rgba(178,58,47,.08)}
+
+/* afgerond */
+li.task.done .check{background:var(--ink);border-color:var(--ink)}
+li.task.done .check svg{opacity:1}
+li.task.done .title-text{
+  font-weight:400;color:var(--muted);
+  text-decoration:line-through;
+  text-decoration-color:var(--yellow);
+  text-decoration-thickness:3px;
+  text-underline-offset:1px;
+}
+li.task.done .sub{opacity:.65}
+li.task.done .tag{color:var(--muted);font-weight:400}
+li.task.done .due{color:var(--muted)!important;font-weight:400!important}
+
+.section-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;margin:38px 0 10px;
+}
+.section-head h2{font-size:14px;font-weight:600;color:var(--muted);margin:0}
+.linkbtn{
+  border:none;background:transparent;color:var(--ink-soft);
+  font-size:13px;text-decoration:underline;text-underline-offset:3px;padding:2px;
+}
+.linkbtn:hover{color:var(--danger)}
+
+.empty{color:var(--muted);font-size:15px;padding:28px 4px}
+
+/* edit-veld */
+.edit-input{
+  font-family:inherit;font-size:16px;width:100%;
+  border:none;border-bottom:1.5px solid var(--blue);
+  background:transparent;color:var(--ink);outline:none;padding:0 0 2px;
+}
+
+footer{
+  margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
+  display:flex;gap:18px;align-items:center;flex-wrap:wrap;
+  font-size:13px;color:var(--muted);
+}
+footer button{
+  border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);
+  border-radius:6px;padding:6px 12px;font-size:13px;
+}
+footer button:hover{border-color:var(--ink-soft)}
+@media (max-width:560px){
+  .wrap{padding:32px 16px 72px}
+  h1{font-size:34px}
+  #add{margin-left:0;width:100%}
+  .del{opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>Takenlijst</h1>
+      <svg class="sun" id="sun" viewBox="0 0 100 100" aria-hidden="true">
+        <g fill="currentColor" stroke="var(--cream)" stroke-width="2">
+          <g id="petals"></g>
+        </g>
+        <circle cx="50" cy="50" r="16" fill="currentColor" stroke="var(--cream)" stroke-width="3"/>
+        <path d="M42 54 A9 9 0 0 0 54 42" fill="none" stroke="var(--cream)" stroke-width="3.4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="count" id="count"></span>
+  </header>
+
+  <div class="compose">
+    <input id="title" type="text" placeholder="Wat moet er gebeuren?" autocomplete="off">
+    <div class="meta-row">
+      <span class="field">
+        <label for="project">Project</label>
+        <input id="project" type="text" list="projects" placeholder="optioneel" autocomplete="off">
+        <datalist id="projects"></datalist>
+      </span>
+      <span class="field">
+        <label for="deadline">Deadline</label>
+        <input id="deadline" type="date">
+      </span>
+      <button id="add">Toevoegen</button>
+    </div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <ul id="open-list"></ul>
+  <p class="empty" id="empty" hidden>Nog geen openstaande taken.</p>
+
+  <div class="section-head" id="done-head" hidden>
+    <h2>Afgerond</h2>
+    <button class="linkbtn" id="clear-done">Afgeronde taken verwijderen</button>
+  </div>
+  <ul id="done-list"></ul>
+
+  <footer>
+    <span>Opgeslagen in deze browser</span>
+    <button id="export">Back-up opslaan</button>
+    <button id="import-btn">Back-up inlezen</button>
+    <input id="import-file" type="file" accept="application/json" hidden>
+  </footer>
+
+</div>
+
+<script>
+const KEY = 'takenlijst-v1';
+let tasks = [];
+let filter = null;
+
+(function buildSun(){
+  const g = document.getElementById('petals');
+  for(let i = 0; i < 12; i++){
+    const e = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    e.setAttribute('cx','50');
+    e.setAttribute('cy','23');
+    e.setAttribute('rx','7');
+    e.setAttribute('ry','17');
+    e.setAttribute('transform','rotate(' + (i*30) + ' 50 50)');
+    g.appendChild(e);
+  }
+})();
+
+function load(){
+  try { tasks = JSON.parse(localStorage.getItem(KEY)) || []; }
+  catch(e){ tasks = []; }
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(tasks)); }
+  catch(e){ console.warn('Opslaan mislukt', e); }
+}
+
+function todayISO(){
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+
+function formatDue(iso){
+  if(!iso) return null;
+  const today = todayISO();
+  const diff = Math.round((new Date(iso+'T00:00') - new Date(today+'T00:00')) / 86400000);
+  let label;
+  if(diff === 0) label = 'vandaag';
+  else if(diff === 1) label = 'morgen';
+  else if(diff === -1) label = 'gisteren';
+  else {
+    const d = new Date(iso+'T00:00');
+    const opts = {day:'numeric', month:'short'};
+    if(d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+    label = d.toLocaleDateString('nl-NL', opts);
+  }
+  return { label, state: diff < 0 ? 'late' : (diff === 0 ? 'today' : '') };
+}
+
+function projects(){
+  return [...new Set(tasks.map(t => t.project).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'nl'));
+}
+
+function addTask(){
+  const title = document.getElementById('title').value.trim();
+  if(!title){
+    document.getElementById('title').focus();
+    return;
+  }
+  tasks.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+    title,
+    project: document.getElementById('project').value.trim(),
+    deadline: document.getElementById('deadline').value || '',
+    done: false,
+    doneAt: null,
+    createdAt: Date.now()
+  });
+  document.getElementById('title').value = '';
+  document.getElementById('deadline').value = '';
+  save(); render();
+  document.getElementById('title').focus();
+}
+
+function toggle(id){
+  const t = tasks.find(t => t.id === id);
+  if(!t) return;
+  t.done = !t.done;
+  t.doneAt = t.done ? Date.now() : null;
+  save(); render();
+}
+
+function remove(id){
+  tasks = tasks.filter(t => t.id !== id);
+  save(); render();
+}
+
+function makeItem(t){
+  const li = document.createElement('li');
+  li.className = 'task' + (t.done ? ' done' : '');
+
+  const check = document.createElement('button');
+  check.className = 'check';
+  check.setAttribute('aria-label', t.done ? 'Markeer als niet afgerond' : 'Markeer als afgerond');
+  check.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="#fffdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6.3L4.4 9.2L10.5 2.8"/></svg>';
+  check.onclick = () => toggle(t.id);
+
+  const body = document.createElement('div');
+  body.className = 'body';
+
+  const text = document.createElement('div');
+  text.className = 'title-text';
+  text.textContent = t.title;
+  text.title = 'Dubbelklik om te bewerken';
+  text.ondblclick = () => startEdit(t, text);
+  body.appendChild(text);
+
+  const due = formatDue(t.deadline);
+  if(t.project || due){
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    if(t.project){
+      const s = document.createElement('span');
+      s.className = 'tag';
+      s.textContent = t.project;
+      sub.appendChild(s);
+    }
+    if(due){
+      const s = document.createElement('span');
+      s.className = 'due ' + due.state;
+      s.textContent = due.label;
+      sub.appendChild(s);
+    }
+    body.appendChild(sub);
+  }
+
+  const del = document.createElement('button');
+  del.className = 'del';
+  del.setAttribute('aria-label', 'Verwijder taak');
+  del.textContent = '\u00d7';
+  del.onclick = () => remove(t.id);
+
+  li.append(check, body, del);
+  return li;
+}
+
+function startEdit(t, node){
+  const input = document.createElement('input');
+  input.className = 'edit-input';
+  input.value = t.title;
+  node.replaceWith(input);
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+  const commit = () => {
+    const v = input.value.trim();
+    if(v) t.title = v;
+    save(); render();
+  };
+  input.onblur = commit;
+  input.onkeydown = e => {
+    if(e.key === 'Enter'){ e.preventDefault(); commit(); }
+    if(e.key === 'Escape'){ render(); }
+  };
+}
+
+function renderFilters(){
+  const wrap = document.getElementById('filters');
+  wrap.innerHTML = '';
+  const list = projects();
+  if(!list.length) return;
+
+  const all = document.createElement('button');
+  all.className = 'chip' + (filter === null ? ' on' : '');
+  all.textContent = 'Alles';
+  all.onclick = () => { filter = null; render(); };
+  wrap.appendChild(all);
+
+  list.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (filter === p ? ' on' : '');
+    b.textContent = p;
+    b.onclick = () => { filter = (filter === p ? null : p); render(); };
+    wrap.appendChild(b);
+  });
+
+  const dl = document.getElementById('projects');
+  dl.innerHTML = '';
+  list.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p;
+    dl.appendChild(o);
+  });
+}
+
+function render(){
+  renderFilters();
+
+  const visible = tasks.filter(t => filter === null || t.project === filter);
+
+  const open = visible.filter(t => !t.done).sort((a,b) => {
+    if(a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+    if(a.deadline) return -1;
+    if(b.deadline) return 1;
+    return a.createdAt - b.createdAt;
+  });
+  const done = visible.filter(t => t.done).sort((a,b) => (b.doneAt||0) - (a.doneAt||0));
+
+  const openList = document.getElementById('open-list');
+  const doneList = document.getElementById('done-list');
+  openList.innerHTML = '';
+  doneList.innerHTML = '';
+  open.forEach(t => openList.appendChild(makeItem(t)));
+  done.forEach(t => doneList.appendChild(makeItem(t)));
+
+  document.getElementById('empty').hidden = open.length > 0;
+  document.getElementById('done-head').hidden = done.length === 0;
+
+  const c = document.getElementById('count');
+  c.textContent = open.length === 0 ? 'niets openstaand'
+    : open.length + (open.length === 1 ? ' taak open' : ' taken open');
+
+  document.getElementById('sun').classList.toggle('happy', open.length === 0 && tasks.length > 0);
+}
+
+document.getElementById('add').onclick = addTask;
+document.getElementById('title').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); addTask(); }
+});
+document.getElementById('project').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); addTask(); }
+});
+document.getElementById('deadline').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); addTask(); }
+});
+
+document.getElementById('clear-done').onclick = () => {
+  const n = tasks.filter(t => t.done).length;
+  if(n && confirm('Definitief ' + n + (n === 1 ? ' afgeronde taak' : ' afgeronde taken') + ' verwijderen?')){
+    tasks = tasks.filter(t => !t.done);
+    save(); render();
+  }
+};
+
+document.getElementById('export').onclick = () => {
+  const blob = new Blob([JSON.stringify(tasks, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'takenlijst-' + todayISO() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+document.getElementById('import-btn').onclick = () => document.getElementById('import-file').click();
+document.getElementById('import-file').onchange = e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error('geen lijst');
+      const ids = new Set(tasks.map(t => t.id));
+      let added = 0;
+      data.forEach(t => {
+        if(t && t.title && !ids.has(t.id)){ tasks.push(t); added++; }
+      });
+      save(); render();
+      alert(added + (added === 1 ? ' taak toegevoegd.' : ' taken toegevoegd.'));
+    } catch(err){
+      alert('Dit bestand kon niet worden gelezen. Kies een back-up die met deze app is opgeslagen.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+};
+
+load();
+render();
+</script>
+</body>
+</html>
