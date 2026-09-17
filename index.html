@@ -147,6 +147,39 @@ li.task.done .due{color:var(--muted)!important;font-weight:400!important}
 
 .empty{color:var(--muted);font-size:15px;padding:28px 4px}
 
+/* ---------- notities ---------- */
+.notebtn{
+  flex:0 0 auto;border:none;background:transparent;color:#c4bbaa;
+  padding:3px 5px;border-radius:4px;margin-top:1px;
+  display:grid;place-items:center;opacity:0;transition:.15s;
+}
+.notebtn svg{width:16px;height:16px}
+li.task:hover .notebtn,.notebtn:focus-visible{opacity:1}
+.notebtn.has{opacity:1;color:var(--blue)}
+.notebtn.on{opacity:1;color:var(--blue-deep);background:rgba(104,118,136,.12)}
+.notebtn:hover{color:var(--blue-deep);background:rgba(104,118,136,.12)}
+li.task.done .notebtn.has{color:var(--muted)}
+
+.note-input{
+  font-family:inherit;font-size:14.5px;line-height:1.55;color:var(--ink-soft);
+  width:100%;margin-top:10px;display:block;
+  background:var(--paper);border:1px solid var(--line);
+  border-left:3px solid var(--blue);border-radius:6px;
+  padding:10px 12px;resize:none;overflow:hidden;outline:none;
+}
+.note-input[hidden]{display:none}
+.note-input::placeholder{color:#b3ab99}
+.note-input:focus{box-shadow:0 0 0 2px rgba(104,118,136,.18)}
+.note-hint{font-size:12px;color:var(--muted);margin-top:5px}
+
+#note{margin-top:0;margin-bottom:12px}
+#note-toggle{
+  border:1px solid var(--line);background:var(--cream);color:var(--ink-soft);
+  border-radius:6px;padding:6px 12px;font-size:13px;transition:.15s;
+}
+#note-toggle:hover{border-color:var(--ink-soft)}
+#note-toggle.on{border-color:var(--blue);color:var(--blue)}
+
 /* edit-veld */
 .edit-input{
   font-family:inherit;font-size:16px;width:100%;
@@ -168,7 +201,7 @@ footer button:hover{border-color:var(--ink-soft)}
   .wrap{padding:32px 16px 72px}
   h1{font-size:34px}
   #add{margin-left:0;width:100%}
-  .del{opacity:1}
+  .del,.notebtn{opacity:1}
 }
 </style>
 </head>
@@ -191,6 +224,7 @@ footer button:hover{border-color:var(--ink-soft)}
 
   <div class="compose">
     <input id="title" type="text" placeholder="Wat moet er gebeuren?" autocomplete="off">
+    <textarea id="note" class="note-input" rows="3" placeholder="Achtergrond, uitleg, links…" hidden></textarea>
     <div class="meta-row">
       <span class="field">
         <label for="project">Project</label>
@@ -201,6 +235,7 @@ footer button:hover{border-color:var(--ink-soft)}
         <label for="deadline">Deadline</label>
         <input id="deadline" type="date">
       </span>
+      <button id="note-toggle" type="button" aria-expanded="false">Notitie</button>
       <button id="add">Toevoegen</button>
     </div>
   </div>
@@ -229,6 +264,12 @@ footer button:hover{border-color:var(--ink-soft)}
 const KEY = 'takenlijst-v1';
 let tasks = [];
 let filter = null;
+const openNotes = new Set();
+
+function autoGrow(el){
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight + 2) + 'px';
+}
 
 (function buildSun(){
   const g = document.getElementById('petals');
@@ -289,12 +330,15 @@ function addTask(){
     title,
     project: document.getElementById('project').value.trim(),
     deadline: document.getElementById('deadline').value || '',
+    note: document.getElementById('note').value.trim(),
     done: false,
     doneAt: null,
     createdAt: Date.now()
   });
   document.getElementById('title').value = '';
   document.getElementById('deadline').value = '';
+  document.getElementById('note').value = '';
+  showComposeNote(false);
   save(); render();
   document.getElementById('title').focus();
 }
@@ -309,6 +353,7 @@ function toggle(id){
 
 function remove(id){
   tasks = tasks.filter(t => t.id !== id);
+  openNotes.delete(id);
   save(); render();
 }
 
@@ -351,13 +396,55 @@ function makeItem(t){
     body.appendChild(sub);
   }
 
+  const noteBtn = document.createElement('button');
+  const hasNote = !!(t.note && t.note.trim());
+  const isOpen = openNotes.has(t.id);
+  noteBtn.className = 'notebtn' + (hasNote ? ' has' : '') + (isOpen ? ' on' : '');
+  noteBtn.setAttribute('aria-label', isOpen ? 'Notitie sluiten' : (hasNote ? 'Notitie lezen of bewerken' : 'Notitie toevoegen'));
+  noteBtn.title = noteBtn.getAttribute('aria-label');
+  noteBtn.innerHTML = hasNote
+    ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h11v15h-11z"/><path d="M7.5 6.5h6M7.5 10h6M7.5 13.5h3.5"/></svg>'
+    : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h11v15h-11z"/><path d="M10 7v6M7 10h6"/></svg>';
+  noteBtn.onclick = () => {
+    if(openNotes.has(t.id)) openNotes.delete(t.id);
+    else openNotes.add(t.id);
+    render();
+  };
+
+  if(isOpen){
+    const ta = document.createElement('textarea');
+    ta.className = 'note-input';
+    ta.rows = 3;
+    ta.placeholder = 'Achtergrond, uitleg, links…';
+    ta.value = t.note || '';
+    ta.oninput = () => {
+      t.note = ta.value;
+      autoGrow(ta);
+      save();
+    };
+    ta.onkeydown = e => {
+      if(e.key === 'Escape'){ ta.blur(); openNotes.delete(t.id); render(); }
+    };
+    body.appendChild(ta);
+
+    const hint = document.createElement('div');
+    hint.className = 'note-hint';
+    hint.textContent = 'Wordt direct opgeslagen. Esc of nogmaals op het icoontje om te sluiten.';
+    body.appendChild(hint);
+
+    requestAnimationFrame(() => {
+      autoGrow(ta);
+      if(!hasNote){ ta.focus(); }
+    });
+  }
+
   const del = document.createElement('button');
   del.className = 'del';
   del.setAttribute('aria-label', 'Verwijder taak');
   del.textContent = '\u00d7';
   del.onclick = () => remove(t.id);
 
-  li.append(check, body, del);
+  li.append(check, body, noteBtn, del);
   return li;
 }
 
@@ -438,6 +525,23 @@ function render(){
 
   document.getElementById('sun').classList.toggle('happy', open.length === 0 && tasks.length > 0);
 }
+
+function showComposeNote(show){
+  const ta = document.getElementById('note');
+  const btn = document.getElementById('note-toggle');
+  ta.hidden = !show;
+  btn.classList.toggle('on', show);
+  btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+  if(show){ autoGrow(ta); ta.focus(); }
+}
+
+document.getElementById('note-toggle').onclick = () => {
+  const ta = document.getElementById('note');
+  if(!ta.hidden && ta.value.trim() === ''){ showComposeNote(false); return; }
+  if(!ta.hidden){ ta.focus(); return; }
+  showComposeNote(true);
+};
+document.getElementById('note').addEventListener('input', e => autoGrow(e.target));
 
 document.getElementById('add').onclick = addTask;
 document.getElementById('title').addEventListener('keydown', e => {
